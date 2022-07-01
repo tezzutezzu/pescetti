@@ -10,7 +10,7 @@ const shuffleIndices = () => {
 
 export class Flock {
   constructor() {
-    const amount = points.length
+    const amount = fishPoints.length
     this.boids = []
     for (var i = 0; i < amount; i++) {
       var b = new Boid(fishPoints[i].x, fishPoints[i].y, i)

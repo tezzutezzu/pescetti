@@ -5,12 +5,13 @@ import TexturedPlane, { createHandle } from "./TexturedPlane.js"
 import { Flock } from "./Flock.js"
 import { mypoints, myFishPoints } from "./points.js"
 // DEBUG
-window.dontTrack = true
+window.dontTrack = false
 window.debugMode = true
 // globals
 window.maximumSpeed = 5
 window.maxSteeringforce = 0.01
-window.points = []
+window.isPescione = false
+window.textPoints = []
 window.fishPoints = []
 window.handlesChanged = false
 // flock parameters
@@ -41,19 +42,25 @@ let currentPoses = []
 let boundHandle
 
 app.stage.interactive = true
-document.body.appendChild(app.view)
+
+function updateDebug() {
+  boundHandle.visible = debugMode
+  texturedPlane.show(!debugMode)
+  debugGraphics.clear()
+}
 
 window.addEventListener(
   "keydown",
   (e) => {
     if (e.key === "d") {
       debugMode = !debugMode
-      boundHandle.visible = debugMode
-      texturedPlane.show(!debugMode)
-      debugGraphics.clear()
+      updateDebug()
     } else {
-      // homing = !homing
-      // if (flock) flock.boids.forEach((b) => b.resetVelocity())
+      homing = !homing
+      if (homing) {
+        isPescione = !isPescione
+      }
+      if (flock) flock.boids.forEach((b) => b.resetVelocity())
     }
   },
   false
@@ -77,7 +84,7 @@ async function getMedia() {
     detectorConfig
   )
 
-  points = mypoints.map((d) => {
+  textPoints = mypoints.map((d) => {
     const s = 3.5
     return createVector(Math.round(d.x) * s + 300, Math.round(d.y) * s + 550)
   })
@@ -117,20 +124,15 @@ async function getMedia() {
       detectPoses(canvas)
 
       if (currentPoses.length > 0) {
-        const local = getWorldCoordFromMatrix(
-          texturedPlane.containerSprite.proj.matrix,
-          currentPoses[0].keypoints[0]
-        )
-
+        const m = texturedPlane.containerSprite.proj.matrix
+        const local = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[0])
         targetX = local.x
         targetY = local.y
-
-        trackingGraphics.beginFill(0xde3249)
-        trackingGraphics.drawCircle(targetX, targetY, 20)
-        trackingGraphics.endFill()
-
+        // trackingGraphics.beginFill(0xde3249)
+        // trackingGraphics.drawCircle(targetX, targetY, 20)
+        // trackingGraphics.endFill()
         // drawKeyframes(ctx, currentPoses[0].keypoints)
-        // drawSkeleton(ctx, currentPoses[0].keypoints)
+        drawSkeleton(m, currentPoses[0].keypoints)
       } else {
         targetX = null
         targetY = null
@@ -145,6 +147,8 @@ async function getMedia() {
   }
 
   const startRendering = () => {
+    document.body.appendChild(app.view)
+
     texturedPlane = new TexturedPlane(app)
 
     //add textured plane
@@ -159,6 +163,7 @@ async function getMedia() {
     app.stage.addChild(debugGraphics)
     app.stage.addChild(trackingGraphics)
     app.stage.addChild(boundHandle)
+    updateDebug()
 
     ctx.translate(canvas.width, 0)
     ctx.scale(-1, 1)
@@ -203,11 +208,23 @@ function getWorldCoordFromMatrix(matrix, { x, y }) {
 
   return newPos
 }
-function drawSkeleton(ctx, keypoints, poseId = null) {
+function drawSkeleton(matrix, _keypoints, poseId = null) {
   // Each poseId is mapped to a color in the color palette.
-  const color = "#ffffff"
-  ctx.strokeStyle = color
-  ctx.lineWidth = 2
+  // trackingGraphics.lineWidth = 2
+
+  const keypoints = _keypoints.map((d) => {
+    const { x, y } = getWorldCoordFromMatrix(matrix, d)
+    return {
+      ...d,
+      x,
+      y,
+    }
+  })
+
+  trackingGraphics.clear()
+
+  trackingGraphics.lineStyle(2, 0xffffff)
+
   poseDetection.util.getAdjacentPairs("MoveNet").forEach(([i, j]) => {
     const kp1 = keypoints[i]
     const kp2 = keypoints[j] // If score is null, just show the keypoint.
@@ -217,10 +234,13 @@ function drawSkeleton(ctx, keypoints, poseId = null) {
     const scoreThreshold = 0.25
 
     if (score1 >= scoreThreshold && score2 >= scoreThreshold) {
-      ctx.beginPath()
-      ctx.moveTo(kp1.x, kp1.y)
-      ctx.lineTo(kp2.x, kp2.y)
-      ctx.stroke()
+      // trackingGraphics.beginPath()
+      // console.log("asdf")
+
+      trackingGraphics.moveTo(kp1.x, kp1.y)
+      trackingGraphics.lineTo(kp2.x, kp2.y)
+      trackingGraphics.closePath()
+      // trackingGraphics.drawCircle(kp1.x, kp1.y, 20)
     }
   })
 }

@@ -26,7 +26,7 @@ export class Boid {
     this.sprite = new PIXI.AnimatedSprite(textureArray)
     this.sprite.pivot.x = 64
     this.sprite.pivot.y = 64
-    const s = map(Math.random(), 0, 1, 0.2, 0.5)
+    const s = map(Math.random(), 0, 1, 0.15, 0.7)
 
     this.s = s
 
@@ -69,7 +69,8 @@ export class Boid {
 
   home = () => {
     // if (!this.index) console.log(this.velocity.magnitude())
-    const target = fishPoints[this.targetIndex]
+    const array = isPescione ? fishPoints : textPoints
+    const target = array[this.targetIndex]
     const distance = getDistance(target, this.position)
 
     if (distance < 5) {
