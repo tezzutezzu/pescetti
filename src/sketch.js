@@ -5,7 +5,7 @@ import TexturedPlane, { createHandle } from "./TexturedPlane.js"
 import { Flock } from "./Flock.js"
 import { mypoints, myFishPoints } from "./points.js"
 // DEBUG
-window.dontTrack = false
+window.dontTrack = true
 window.debugMode = true
 // globals
 window.maximumSpeed = 5
@@ -14,7 +14,7 @@ window.points = []
 window.fishPoints = []
 window.handlesChanged = false
 // flock parameters
-window.sepScalar = 2.0
+window.sepScalar = 3.0
 window.aliScalar = 2.0
 window.cohScalar = 2.0
 
@@ -32,6 +32,7 @@ window.elapsed = 0.0
 window.bounds = parseFloat(localStorage.getItem("bounds")) || 100
 
 const debugGraphics = new PIXI.Graphics()
+debugGraphics.alpha = 0.5
 const trackingGraphics = new PIXI.Graphics()
 
 let texturedPlane
@@ -46,13 +47,13 @@ window.addEventListener(
   "keydown",
   (e) => {
     if (e.key === "d") {
-      boundHandle.visible = false
-      debugGraphics.clear()
       debugMode = !debugMode
+      boundHandle.visible = debugMode
       texturedPlane.show(!debugMode)
+      debugGraphics.clear()
     } else {
-      homing = !homing
-      if (flock) flock.boids.forEach((b) => b.resetVelocity())
+      // homing = !homing
+      // if (flock) flock.boids.forEach((b) => b.resetVelocity())
     }
   },
   false
@@ -91,6 +92,7 @@ async function getMedia() {
   flock = new Flock()
 
   boundHandle = createHandle(app.screen.width * 0.9, window.bounds, () => {
+    window.bounds = boundHandle.position.y
     localStorage.setItem("bounds", boundHandle.position.y)
   })
   boundHandle.tint = 0x0000bb
@@ -145,10 +147,6 @@ async function getMedia() {
   const startRendering = () => {
     texturedPlane = new TexturedPlane(app)
 
-    app.stage.addChild(debugGraphics)
-    app.stage.addChild(trackingGraphics)
-    app.stage.addChild(boundHandle)
-
     //add textured plane
     texturedPlane.squares.forEach((s) => {
       app.stage.addChild(s)
@@ -157,6 +155,10 @@ async function getMedia() {
 
     // add pescetti
     flock.boids.forEach((b) => app.stage.addChild(b.sprite))
+
+    app.stage.addChild(debugGraphics)
+    app.stage.addChild(trackingGraphics)
+    app.stage.addChild(boundHandle)
 
     ctx.translate(canvas.width, 0)
     ctx.scale(-1, 1)
