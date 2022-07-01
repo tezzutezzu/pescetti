@@ -1,6 +1,5 @@
 import * as PIXI from "./pixi.js"
-
-import { mypoints } from "./points.js"
+import { createVector } from "./sketch.js"
 
 let alienImages = [
   "zerro_animato_png00.png",
@@ -21,10 +20,6 @@ for (let i = 0; i < 4; i++) {
   textureArray.push(texture)
 }
 
-function createVector(x, y) {
-  return new PIXI.Point(x, y)
-}
-
 function getDistance(v1, v2) {
   var dx = v1.x - v2.x
   var dy = v1.y - v2.y
@@ -42,11 +37,6 @@ function limit(v, l) {
   }
   return createVector(x, y)
 }
-
-const points = mypoints.map((d) => {
-  const s = 3.5
-  return createVector(Math.round(d.x) * s + 300, Math.round(d.y) * s + 550)
-})
 
 let shuffledIndices = []
 
@@ -67,9 +57,8 @@ export class Boid {
 
     this.sprite.scale.x = s
     this.sprite.scale.y = s
-    this.maxSteeringforce = 0.01 // Maximum steer ing force
-    this.maxspeed = Math.random() * 2.5 + 2.5 // Maximum speed
-    app.stage.addChild(this.sprite)
+    this.maxSteeringforce = maxSteeringforce
+    this.maxspeed = maximumSpeed // Maximum speed
     this.seeking = false
     this.acceleration = createVector(0, 0)
     this.velocity = createVector(Math.random() * 2 - 1, Math.random() * 2 - 1)
@@ -84,14 +73,14 @@ export class Boid {
     this.update()
     this.borders()
 
-    if (!(Math.round(elapsed) % 600)) {
-      if (this.index == 0) {
-        shuffleIndices()
-      }
-      this.veryclose = false
-      this.acceleration = createVector(Math.random(), Math.random())
-      this.targetIndex = shuffledIndices[this.index]
-    }
+    // if (!(Math.round(elapsed) % 600)) {
+    //   if (this.index == 0) {
+    //     shuffleIndices()
+    //   }
+    //   this.veryclose = false
+    //   this.acceleration = createVector(Math.random(), Math.random())
+    //   this.targetIndex = shuffledIndices[this.index]
+    // }
 
     if (!(Math.round(elapsed) % 10)) {
       this.frameCount++
@@ -104,22 +93,27 @@ export class Boid {
   }
 
   home = () => {
-    if (this.veryclose) {
-      this.velocity = this.velocity.multiplyScalar(0.8)
+    // if (!this.index) console.log(this.velocity.magnitude())
+    const target = fishPoints[this.targetIndex]
+    const distance = getDistance(target, this.position)
+
+    if (distance < 5) {
+      this.velocity = this.velocity.multiplyScalar(0.5)
     } else {
-      const target = points[this.targetIndex]
-      const distance = getDistance(target, this.position)
-      if (distance > 5) {
-        var desired = target.subtract(this.position)
-        // desired = desired.normalize()
-        // desired = desired.multiplyScalar(20)
-        var steer = desired.subtract(this.velocity)
-        steer = limit(steer, 1)
-        this.applyForce(steer)
-      } else {
-        this.veryclose = true
-      }
+      // if (distance > 5) {
+      var desired = target.subtract(this.position)
+      desired = desired.normalize()
+      var steer = desired.subtract(this.velocity)
+      steer = limit(steer, this.maxSteeringforce)
+      this.applyForce(steer)
+      // } else {
+      //   this.veryclose = true
+      // }
     }
+  }
+
+  resetVelocity = () => {
+    // this.velocity = this.velocity.multiplyScalar(0)
   }
 
   flock = (boids) => {
@@ -131,19 +125,17 @@ export class Boid {
       let ali = this.align(boids)
       let coh = this.cohesion(boids)
 
-      sep = sep.multiplyScalar(4)
-      ali = ali.multiplyScalar(1.0)
-      coh = coh.multiplyScalar(3.0)
+      sep = sep.multiplyScalar(sepScalar)
+      ali = ali.multiplyScalar(aliScalar)
+      coh = coh.multiplyScalar(cohScalar)
 
-      // if (!this.seeking) {
-      //   this.applyForce(ali)
-      //   this.applyForce(coh)
-      // }
+      this.applyForce(ali)
+      this.applyForce(coh)
       this.applyForce(sep)
 
       if (targetX != null) {
         let mows = this.followTarget()
-        mows = mows.multiplyScalar(5)
+        mows = mows.multiplyScalar(10)
         this.applyForce(mows)
       }
     }
@@ -177,10 +169,25 @@ export class Boid {
   }
 
   borders = () => {
-    if (this.position.x < -this.r) this.position.x = width + this.r
-    if (this.position.y < -this.r) this.position.y = height + this.r
-    if (this.position.x > width + this.r) this.position.x = -this.r
-    if (this.position.y > height + this.r) this.position.y = -this.r
+    const w = app.screen.width
+    const h = app.screen.height
+
+    const b = window.bounds
+
+    if (this.position.x < -this.r) {
+      this.position.x = w + this.r
+    }
+    if (this.position.x > w + this.r) {
+      this.position.x = -this.r
+    }
+
+    if (this.position.y < b - this.r) {
+      this.position.y = h - b + this.r
+    }
+
+    if (this.position.y > h - b + this.r) {
+      this.position.y = b - this.r
+    }
   }
 
   separate = (boids) => {
@@ -278,7 +285,7 @@ export class Flock {
     const amount = points.length
     this.boids = []
     for (var i = 0; i < amount; i++) {
-      var b = new Boid(points[i].x, points[i].y, i)
+      var b = new Boid(fishPoints[i].x, fishPoints[i].y, i)
       this.boids.push(b)
     }
   }

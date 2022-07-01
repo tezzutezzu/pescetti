@@ -5,6 +5,7 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "description": "",
   "scripts": {
+    "start":"npx parcel src/index.html --https",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
