@@ -8,7 +8,9 @@ import { mypoints, myFishPoints } from "./points.js"
 window.dontTrack = false
 window.debugMode = true
 // globals
-window.maximumSpeed = 5
+const keypointIndices = [0, 5, 6, 7, 8, 9, 10]
+
+window.maximumSpeed = 10
 window.maxSteeringforce = 0.01
 window.isPescione = false
 window.textPoints = []
@@ -23,11 +25,10 @@ window.videoWidth = 640
 window.videoHeight = 480
 
 window.homing = false
-window.targetX = null
-window.targetY = null
+window.targets = null
 window.app = new PIXI.Application({ resizeTo: window })
 window.neighbordist = 200
-window.minMouseDistance = 200
+window.minMouseDistance = 300
 window.elapsed = 0.0
 
 window.bounds = parseFloat(localStorage.getItem("bounds")) || 100
@@ -85,8 +86,11 @@ async function getMedia() {
   )
 
   textPoints = mypoints.map((d) => {
-    const s = 3.5
-    return createVector(Math.round(d.x) * s + 300, Math.round(d.y) * s + 550)
+    // const s = 3.5
+    const s = (app.screen.width * 0.8) / 300
+    const offX = (app.screen.width - 300 * s) * 0.5
+    const offY = (window.innerHeight - 116 * s) * 0.5
+    return createVector(Math.round(d.x) * s + offX, Math.round(d.y) * s + offY)
   })
 
   fishPoints = myFishPoints.map((d) => {
@@ -121,21 +125,28 @@ async function getMedia() {
     if (!dontTrack) {
       trackingGraphics.clear()
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-      detectPoses(canvas)
+      if (!homing) detectPoses(canvas)
 
       if (currentPoses.length > 0) {
         const m = texturedPlane.containerSprite.proj.matrix
-        const local = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[0])
-        targetX = local.x
-        targetY = local.y
+        // const local = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[0])
+        // targetX = local.x
+        // targetY = local.y
         // trackingGraphics.beginFill(0xde3249)
         // trackingGraphics.drawCircle(targetX, targetY, 20)
         // trackingGraphics.endFill()
         // drawKeyframes(ctx, currentPoses[0].keypoints)
-        drawSkeleton(m, currentPoses[0].keypoints)
+
+        targets = []
+
+        keypointIndices.forEach((k, i) => {
+          const n = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[k])
+          targets[i] = createVector(n.x, n.y)
+        })
+
+        // drawSkeleton(m, currentPoses[0].keypoints)
       } else {
-        targetX = null
-        targetY = null
+        targets = null
       }
 
       if (debugMode) {

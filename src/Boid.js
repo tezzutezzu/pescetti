@@ -26,7 +26,7 @@ export class Boid {
     this.sprite = new PIXI.AnimatedSprite(textureArray)
     this.sprite.pivot.x = 64
     this.sprite.pivot.y = 64
-    const s = map(Math.random(), 0, 1, 0.15, 0.7)
+    const s = map(Math.random(), 0, 1, 0.3, 0.9)
 
     this.s = s
 
@@ -67,21 +67,27 @@ export class Boid {
     this.acceleration = this.acceleration.add(force)
   }
 
-  home = () => {
-    // if (!this.index) console.log(this.velocity.magnitude())
+  home = (boids) => {
     const array = isPescione ? fishPoints : textPoints
     const target = array[this.targetIndex]
     const distance = getDistance(target, this.position)
 
     if (distance < 5) {
-      this.velocity = this.velocity.multiplyScalar(0.5)
+      this.velocity = this.velocity.multiplyScalar(0.9)
     } else {
       // if (distance > 5) {
       var desired = target.subtract(this.position)
       desired = desired.normalize()
+      desired.multiplyScalar(4)
       var steer = desired.subtract(this.velocity)
       steer = limit(steer, this.maxSteeringforce)
       this.applyForce(steer)
+      let sep = this.separate(boids)
+      sep = sep.multiplyScalar(0.2)
+      this.applyForce(sep)
+
+      // this.position.x = target.x
+      // this.position.y = target.y
       // } else {
       //   this.veryclose = true
       // }
@@ -93,8 +99,13 @@ export class Boid {
   }
 
   flock = (boids) => {
+    this.sprite.tint = 0xffffff
+
     if (homing) {
-      this.home()
+      this.home(boids)
+      if (debugMode) {
+        this.sprite.tint = 0xff0000
+      }
     } else {
       this.veryclose = false
       let sep = this.separate(boids)
@@ -109,9 +120,13 @@ export class Boid {
       this.applyForce(coh)
       this.applyForce(sep)
 
-      if (targetX != null) {
+      if (targets != null) {
+        const m = targets[this.index % targets.length]
+        // if (this.index == 0) console.log(m)
+        // this.position.x = m.x
+        // this.position.y = m.y
         let mows = this.followTarget()
-        mows = mows.multiplyScalar(10)
+        mows = mows.multiplyScalar(20)
         this.applyForce(mows)
       }
     }
@@ -151,12 +166,6 @@ export class Boid {
     }
     if (this.position.x > w + this.r) {
       this.position.x = -this.r
-    }
-
-    if (debugMode) {
-      this.sprite.tint = this.position.y > b ? 0xff0000 : 0xffffff
-    } else {
-      this.sprite.tint = 0xffffff
     }
 
     if (this.position.y < b - this.r) {
@@ -246,15 +255,24 @@ export class Boid {
   }
 
   followTarget = () => {
-    var m = createVector(targetX, targetY)
+    const m = targets[this.index % targets.length]
     var d = getDistance(this.position, m)
+
+    let v
     if (d < minMouseDistance) {
       this.seeking = true
-      return this.seek(m) // Steer towards the mouse location
+      v = this.seek(m) // Steer towards the mouse location
     } else {
       this.seeking = false
-      return createVector(0, 0)
+      v = createVector(0, 0)
     }
+    // if (debugMode) {
+    //   this.sprite.tint = this.seeking ? 0xff0000 : 0xffffff
+    // } else {
+    //   this.sprite.tint = 0xffffff
+    // }
+
+    return v
   }
 }
 

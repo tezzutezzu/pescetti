@@ -23,8 +23,8 @@ function setup() {
   fontGr.background(255)
   fontGr.fill(0)
   fontGr.textFont(caslon)
-  fontGr.textSize(45)
-  fontGr.text("ZARRO", 0, 44)
+  fontGr.textSize(40)
+  fontGr.text("ZERRO", 10, 45)
 
   const fontPoints = getPoints(fontGr)
   translate(0, grh)
