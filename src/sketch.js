@@ -28,9 +28,9 @@ window.homing = false
 window.targets = null
 window.app = new PIXI.Application({ resizeTo: window })
 window.neighbordist = 200
-window.minMouseDistance = 300
+window.minMouseDistance = window.innerWidth / 2
 window.elapsed = 0.0
-
+window.skeletonMode = false
 window.bounds = parseFloat(localStorage.getItem("bounds")) || 100
 
 const debugGraphics = new PIXI.Graphics()
@@ -56,6 +56,8 @@ window.addEventListener(
     if (e.key === "d") {
       debugMode = !debugMode
       updateDebug()
+    } else if (e.key === "s") {
+      skeletonMode = !skeletonMode
     } else {
       homing = !homing
       if (homing) {
@@ -140,11 +142,13 @@ async function getMedia() {
         targets = []
 
         keypointIndices.forEach((k, i) => {
-          const n = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[k])
-          targets[i] = createVector(n.x, n.y)
+          if (currentPoses[0].keypoints[k]) {
+            const n = getWorldCoordFromMatrix(m, currentPoses[0].keypoints[k])
+            targets.push(createVector(n.x, n.y))
+          }
         })
 
-        // drawSkeleton(m, currentPoses[0].keypoints)
+        if (skeletonMode && !homing) drawSkeleton(m, currentPoses[0].keypoints)
       } else {
         targets = null
       }
@@ -176,8 +180,8 @@ async function getMedia() {
     app.stage.addChild(boundHandle)
     updateDebug()
 
-    ctx.translate(canvas.width, 0)
-    ctx.scale(-1, 1)
+    // ctx.translate(canvas.width, 0)
+    // ctx.scale(-1, 1)
     app.ticker.add(render)
   }
 
@@ -234,7 +238,7 @@ function drawSkeleton(matrix, _keypoints, poseId = null) {
 
   trackingGraphics.clear()
 
-  trackingGraphics.lineStyle(2, 0xffffff)
+  trackingGraphics.lineStyle(4, 0xffffff)
 
   poseDetection.util.getAdjacentPairs("MoveNet").forEach(([i, j]) => {
     const kp1 = keypoints[i]
@@ -245,13 +249,9 @@ function drawSkeleton(matrix, _keypoints, poseId = null) {
     const scoreThreshold = 0.25
 
     if (score1 >= scoreThreshold && score2 >= scoreThreshold) {
-      // trackingGraphics.beginPath()
-      // console.log("asdf")
-
       trackingGraphics.moveTo(kp1.x, kp1.y)
       trackingGraphics.lineTo(kp2.x, kp2.y)
       trackingGraphics.closePath()
-      // trackingGraphics.drawCircle(kp1.x, kp1.y, 20)
     }
   })
 }

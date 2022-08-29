@@ -24,6 +24,8 @@ function setup() {
   fontGr.fill(0)
   fontGr.textFont(caslon)
   fontGr.textSize(40)
+  fontGr.translate(140, 0)
+  fontGr.scale(-1, 1)
   fontGr.text("ZERRO", 10, 45)
 
   const fontPoints = getPoints(fontGr)
